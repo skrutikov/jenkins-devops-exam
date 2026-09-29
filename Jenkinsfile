@@ -92,7 +92,7 @@ pipeline {
         stage('Deploy prod') {
             when {
                 expression {
-                    env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'master'
+                    env.GIT_BRANCH == 'master' || env.GIT_BRANCH?.endsWith('/master')
                 }
             }
             environment {
