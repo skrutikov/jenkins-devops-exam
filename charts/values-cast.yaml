@@ -2,7 +2,7 @@
 # Install this file with release name "cast".
 
 image:
-  repository: YOUR_DOCKERHUB/cast-service
+  repository: seryonya/cast-service
   tag: "latest"
 
 probe:
