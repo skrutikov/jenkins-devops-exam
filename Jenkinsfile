@@ -3,22 +3,21 @@ pipeline {
 
     environment {
         DOCKER_ID = "seryonya"
-        MOVIE_IMAGE = "movie-service"
-        CAST_IMAGE = "cast-service"
         DOCKER_TAG = "v.${BUILD_ID}"
+        KUBECONFIG = credentials('config')
     }
 
     stages {
-        stage('Docker Build') {
+        stage('Build') {
             steps {
                 sh '''
-                    docker build -t $DOCKER_ID/$MOVIE_IMAGE:$DOCKER_TAG ./movie-service
-                    docker build -t $DOCKER_ID/$CAST_IMAGE:$DOCKER_TAG ./cast-service
+                    docker build -t $DOCKER_ID/movie-service:$DOCKER_TAG ./movie-service
+                    docker build -t $DOCKER_ID/cast-service:$DOCKER_TAG ./cast-service
                 '''
             }
         }
 
-        stage('Docker Compose Test') {
+        stage('Test') {
             steps {
                 sh '''
                     docker compose down -v || true
@@ -26,86 +25,60 @@ pipeline {
                     sleep 10
                     curl -f http://localhost:8080/api/v1/casts/docs > /dev/null
                     curl -f http://localhost:8080/api/v1/movies/docs > /dev/null
+                    docker compose down -v
                 '''
-            }
-            post {
-                always {
-                    sh 'docker compose down -v || true'
-                }
             }
         }
 
-        stage('Docker Push') {
+        stage('Push') {
             environment {
                 DOCKER_PASS = credentials('DOCKER_HUB_PASS')
             }
             steps {
                 sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_ID" --password-stdin
-                    docker push $DOCKER_ID/$MOVIE_IMAGE:$DOCKER_TAG
-                    docker push $DOCKER_ID/$CAST_IMAGE:$DOCKER_TAG
+                    docker push $DOCKER_ID/movie-service:$DOCKER_TAG
+                    docker push $DOCKER_ID/cast-service:$DOCKER_TAG
                 '''
-            }
-            post {
-                always {
-                    sh 'docker logout || true'
-                }
             }
         }
 
         stage('Deploy dev') {
-            environment {
-                KUBECONFIG = credentials('config')
-            }
             steps {
                 sh '''
-                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace dev --create-namespace --wait --timeout 2m
-                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace dev --create-namespace --wait --timeout 2m
+                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace dev
+                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace dev
                 '''
             }
         }
 
         stage('Deploy qa') {
-            environment {
-                KUBECONFIG = credentials('config')
-            }
             steps {
                 sh '''
-                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace qa --create-namespace --wait --timeout 2m
-                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace qa --create-namespace --wait --timeout 2m
+                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace qa
+                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace qa
                 '''
             }
         }
 
         stage('Deploy staging') {
-            environment {
-                KUBECONFIG = credentials('config')
-            }
             steps {
                 sh '''
-                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace staging --create-namespace --wait --timeout 2m
-                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace staging --create-namespace --wait --timeout 2m
+                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace staging
+                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace staging
                 '''
             }
         }
 
         stage('Deploy prod') {
             when {
-                expression {
-                    env.GIT_BRANCH == 'master' || env.GIT_BRANCH?.endsWith('/master')
-                }
-            }
-            environment {
-                KUBECONFIG = credentials('config')
+                expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
-                timeout(time: 15, unit: 'MINUTES') {
-                    input message: 'Deploy to production?', ok: 'Yes'
-                }
-
+                input message: 'Deploy to production?', ok: 'Yes'
                 sh '''
-                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace prod --create-namespace --wait --timeout 2m
-                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace prod --create-namespace --wait --timeout 2m
+                    helm upgrade --install cast charts -f charts/values-cast.yaml --set image.tag=$DOCKER_TAG --namespace prod
+                    helm upgrade --install movie charts -f charts/values-movie.yaml --set image.tag=$DOCKER_TAG --namespace prod
                 '''
             }
         }
