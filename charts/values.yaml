@@ -40,6 +40,20 @@ probe:
   initialDelaySeconds: 5
   periodSeconds: 10
 
+
+# Optional PostgreSQL instance for this Helm release.
+# Enable it for the movie and cast releases so each service gets its own database.
+postgresql:
+  enabled: false
+  image: postgres:12.1-alpine
+  port: 5432
+  database: app_db
+  username: app_user
+  password: app_password
+  storage:
+    enabled: true
+    size: 1Gi
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
