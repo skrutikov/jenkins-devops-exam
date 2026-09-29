@@ -21,8 +21,11 @@ pipeline {
             steps {
                 sh '''
                     docker compose down -v || true
-                    docker compose up -d --build
-                    sleep 10
+                    docker compose up -d movie_db cast_db
+                    timeout 30 sh -c 'until docker compose exec -T movie_db pg_isready -U movie_db_username -d movie_db_dev; do sleep 1; done'
+                    timeout 30 sh -c 'until docker compose exec -T cast_db pg_isready -U cast_db_username -d cast_db_dev; do sleep 1; done'
+                    docker compose up -d --build movie_service cast_service nginx
+                    sleep 3
                     curl -f http://localhost:8080/api/v1/casts/docs > /dev/null
                     curl -f http://localhost:8080/api/v1/movies/docs > /dev/null
                     docker compose down -v
