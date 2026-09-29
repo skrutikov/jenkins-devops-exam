@@ -2,7 +2,7 @@
 # Install this file with release name "movie".
 
 image:
-  repository: YOUR_DOCKERHUB/movie-service
+  repository: seryonya/movie-service
   tag: "latest"
 
 probe:
