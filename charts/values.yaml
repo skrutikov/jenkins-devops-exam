@@ -5,15 +5,40 @@
 replicaCount: 3
 
 image:
-  repository: sajjadhz/fastapiapp
+  repository: ""
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
-imagePullSecrets: 
-  - name: "regcred"
+# Set this when the registry requires authentication.
+imagePullSecrets: []
+
 nameOverride: ""
 fullnameOverride: ""
+
+# The provided application images do not define a Docker CMD,
+# so the runtime command is configurable from Helm.
+command:
+  - uvicorn
+  - app.main:app
+  - --loop
+  - asyncio
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# Environment variables required by a concrete service can be supplied
+# per Helm release, for example DATABASE_URI or CAST_SERVICE_HOST_URL.
+env: []
+
+# The movie and cast services expose different API paths, so probes are
+# configurable per release instead of being hard-coded in the template.
+probe:
+  enabled: false
+  path: /
+  initialDelaySeconds: 5
+  periodSeconds: 10
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -37,11 +62,13 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# ClusterIP avoids fixed NodePort collisions when the same chart is reused
+# for multiple services/environments. Set type/nodePort explicitly if needed.
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
-  nodePort: 30007  
   targetPort: 8000
+  nodePort: null
 
 ingress:
   enabled: false
