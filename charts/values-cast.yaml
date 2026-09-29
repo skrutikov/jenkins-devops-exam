@@ -1,0 +1,20 @@
+# Values for the cast-service Helm release.
+# Install this file with release name "cast".
+
+image:
+  repository: YOUR_DOCKERHUB/cast-service
+  tag: "latest"
+
+probe:
+  enabled: true
+  path: /api/v1/casts/docs
+
+postgresql:
+  enabled: true
+  database: cast_db
+  username: cast_db_username
+  password: cast_db_password
+
+env:
+  - name: DATABASE_URI
+    value: postgresql://cast_db_username:cast_db_password@cast-fastapiapp-db:5432/cast_db
