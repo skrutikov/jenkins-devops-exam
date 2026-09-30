@@ -33,18 +33,36 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Inject service-specific environment variables into the container.
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
-              containerPort: 8000
+              # Use the configurable service target port instead of hard-coding 8000.
+              containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+          {{- if .Values.probe.enabled }}
           livenessProbe:
             httpGet:
-              path: /api/v1/checkapi
+              # Use the configurable probe path instead of hard-coding it, and quote the value.
+              path: {{ .Values.probe.path | quote }}
               port: http
+            # Wait this many seconds after container startup before the first probe.
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            # Run the probe again at the configured interval.
+            periodSeconds: {{ .Values.probe.periodSeconds }}
           readinessProbe:
             httpGet:
-              path: /api/v1/checkapi
+              # Use the configurable probe path instead of hard-coding it, and quote the value.
+              path: {{ .Values.probe.path | quote }}
               port: http
+            # Wait this many seconds after container startup before the first probe.
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            # Run the probe again at the configured interval.
+            periodSeconds: {{ .Values.probe.periodSeconds }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

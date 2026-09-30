@@ -1,0 +1,57 @@
+# PostgreSQL resources for the application release.
+
+# Create the PostgreSQL Service and Deployment only when PostgreSQL is enabled.
+{{- if .Values.postgresql.enabled }}
+# SERVICE
+apiVersion: v1
+# Create a Kubernetes Service, which provides a stable network endpoint for the database Pod.
+kind: Service
+metadata:
+  # Name of the Service: the "-db" suffix distinguishes it from the application Service
+  # (for the cast release: "cast-fastapiapp-db" | for the movie release: "movie-fastapiapp-db").
+  name: {{ include "fastapiapp.fullname" . }}-db
+spec:
+  # Select Pods that have this label and forward traffic to them.
+  selector:
+    app: {{ include "fastapiapp.fullname" . }}-db
+  ports:
+    # Port exposed by the Kubernetes Service.
+    - port: {{ .Values.postgresql.port }}
+      # Port on the target Pod/container (5432 is the default for PostgreSQL).
+      targetPort: 5432
+---
+# DEPLOYMENT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Name of the Deployment: the "-db" suffix distinguishes it from the application Deployment
+  # (for the cast release: "cast-fastapiapp-db" | for the movie release: "movie-fastapiapp-db").
+  name: {{ include "fastapiapp.fullname" . }}-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      # Select the Pods managed by this Deployment.
+      app: {{ include "fastapiapp.fullname" . }}-db
+  template:
+    metadata:
+      labels:
+        # Label assigned to the Pod; must match both the Deployment and Service selectors.
+        app: {{ include "fastapiapp.fullname" . }}-db
+    # Pod configuration used by the Deployment when creating Pods.
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgresql.image }}
+          ports:
+            # 5432 is the default port for PostgreSQL.
+            - containerPort: 5432
+          env:
+            # Use configurable PostgreSQL settings and quote the string values.
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.username | quote }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgresql.password | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.database | quote }}
+{{- end }}

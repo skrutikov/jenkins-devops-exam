@@ -9,7 +9,10 @@ spec:
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
+      # Render nodePort only if a value is provided and the Service type supports it.
+      {{- if and .Values.service.nodePort (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) }}
       nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
       protocol: TCP
       name: http
   selector:

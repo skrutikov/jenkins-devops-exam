@@ -1,0 +1,27 @@
+# Values for the movie-service Helm release.
+# Use this file when installing or upgrading the "movie" release.
+# Overrides selected defaults from values.yaml.
+
+image:
+  # Docker Hub repository.
+  repository: seryonya/movie-service
+  tag: "latest"
+
+probe:
+  # Enable Kubernetes readiness and liveness checks.
+  # (Readiness failure stops traffic to the Pod; repeated liveness failures restart the container.)
+  enabled: true
+  # FastAPI endpoint checked directly on the Pod, e.g. <pod-ip>:8000/api/v1/movies/docs.
+  path: /api/v1/movies/docs
+
+postgresql:
+  enabled: true
+  database: movie_db
+  username: movie_db_username
+  password: movie_db_password
+
+env:
+  - name: DATABASE_URI
+    value: postgresql://movie_db_username:movie_db_password@movie-fastapiapp-db:5432/movie_db
+  - name: CAST_SERVICE_HOST_URL
+    value: http://cast-fastapiapp/api/v1/casts/

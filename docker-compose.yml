@@ -1,8 +1,7 @@
 services:
   movie_service:
     build: ./movie-service
-    # Use asyncio to avoid the "no current event loop" startup error
-    # caused by the legacy Uvicorn/uvloop combination in this project.
+    # Use asyncio to avoid the "no current event loop" startup error caused by the legacy Uvicorn/uvloop combination in this project.
     command: uvicorn app.main:app --reload --loop asyncio --host 0.0.0.0 --port 8000
     volumes:
       - ./movie-service/:/app/
@@ -25,8 +24,7 @@ services:
 
   cast_service:
     build: ./cast-service
-    # --loop asyncio# Use asyncio to avoid the "no current event loop" startup error
-    # caused by the legacy Uvicorn/uvloop combination in this project.
+    # Use asyncio to avoid the "no current event loop" startup error caused by the legacy Uvicorn/uvloop combination in this project.
     command: uvicorn app.main:app --reload --loop asyncio --host 0.0.0.0 --port 8000
     volumes:
       - ./cast-service/:/app/

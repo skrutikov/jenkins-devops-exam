@@ -11,5 +11,7 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "fastapiapp.fullname" . }}:{{ .Values.service.port }}/api/v1/checkapi']
+      args:
+        # Use the configurable probe path instead of hard-coding it.
+        - '{{ include "fastapiapp.fullname" . }}:{{ .Values.service.port }}{{ .Values.probe.path }}'
   restartPolicy: Never
